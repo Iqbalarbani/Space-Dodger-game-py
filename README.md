@@ -3,6 +3,8 @@
 Game **asteroid shooter** sederhana berbasis **Python 3 + Pygame**. Kamu mengendalikan sebuah pesawat di bagian bawah layar, menghindari asteroid yang jatuh, dan menembaknya untuk mengumpulkan skor. Semua grafik digambar langsung dengan `pygame.draw` dan **semua suara disintesis saat runtime** - **tanpa file gambar atau audio eksternal**, jadi game langsung bisa dijalankan.
 <img width="992" height="781" alt="image" src="https://github.com/user-attachments/assets/b946f789-c197-4903-8c01-8525194708ec" />
 
+<img width="997" height="785" alt="image" src="https://github.com/user-attachments/assets/7d7e3fb6-1645-4ddc-ab89-f50cac41c8b8" />
+
 ---
 
 ## Cara Memainkan (Langkah demi Langkah)
