@@ -605,6 +605,7 @@ class Game:
         self.state = Game.MENU
         self.highscore = self.load_highscore()
         self.sound = SoundBank()
+        self.pause_rect = pygame.Rect(SCREEN_WIDTH - 48, 12, 36, 32)
 
         self.player = None
         self.asteroids = []
@@ -689,12 +690,40 @@ class Game:
             elif event.type == pygame.KEYDOWN:
                 self.handle_keydown(event.key)
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if self.state == Game.MENU:
-                    start_rect, quit_rect = self.menu_buttons()
-                    if start_rect.collidepoint(event.pos):
-                        self.start_game()
-                    elif quit_rect.collidepoint(event.pos):
-                        self.running = False
+                self.handle_click(event.pos)
+
+    def handle_click(self, pos):
+        '''Tangani klik mouse sesuai layar yang sedang aktif.'''
+        if self.state == Game.MENU:
+            start_rect, quit_rect = self.menu_buttons()
+            if start_rect.collidepoint(pos):
+                self.start_game()
+            elif quit_rect.collidepoint(pos):
+                self.running = False
+
+        elif self.state == Game.PLAYING:
+            # tombol pause kecil di kanan atas
+            if self.pause_rect.collidepoint(pos):
+                self.state = Game.PAUSED
+
+        elif self.state == Game.PAUSED:
+            resume, menu, quit_btn = self.pause_buttons()
+            if resume.collidepoint(pos):
+                self.state = Game.PLAYING
+            elif menu.collidepoint(pos):
+                self.state = Game.MENU
+                self.sound.stop_music()
+            elif quit_btn.collidepoint(pos):
+                self.running = False
+
+        elif self.state == Game.GAME_OVER:
+            again, menu, quit_btn = self.gameover_buttons()
+            if again.collidepoint(pos):
+                self.start_game()
+            elif menu.collidepoint(pos):
+                self.state = Game.MENU
+            elif quit_btn.collidepoint(pos):
+                self.running = False
 
     def handle_keydown(self, key):
         # tombol suara berlaku di semua layar
@@ -718,6 +747,9 @@ class Game:
         elif self.state == Game.PAUSED:
             if key == pygame.K_p:
                 self.state = Game.PLAYING
+            elif key == pygame.K_ESCAPE:
+                self.state = Game.MENU
+                self.sound.stop_music()
 
         elif self.state == Game.GAME_OVER:
             if key == pygame.K_r:
@@ -731,6 +763,22 @@ class Game:
         start = pygame.Rect(cx - width // 2, 330, width, height)
         quit_btn = pygame.Rect(cx - width // 2, 410, width, height)
         return start, quit_btn
+
+    def pause_buttons(self):
+        width, height = 240, 56
+        cx = SCREEN_WIDTH // 2
+        resume = pygame.Rect(cx - width // 2, 220, width, height)
+        menu = pygame.Rect(cx - width // 2, 290, width, height)
+        quit_btn = pygame.Rect(cx - width // 2, 360, width, height)
+        return resume, menu, quit_btn
+
+    def gameover_buttons(self):
+        width, height = 240, 56
+        cx = SCREEN_WIDTH // 2
+        again = pygame.Rect(cx - width // 2, 350, width, height)
+        menu = pygame.Rect(cx - width // 2, 420, width, height)
+        quit_btn = pygame.Rect(cx - width // 2, 490, width, height)
+        return again, menu, quit_btn
 
     # --------------------------------------------------------
     # Update
@@ -972,11 +1020,14 @@ class Game:
         hi_surf = self.font_small.render(f'HI {self.highscore}', True, NEON_YELLOW)
         self.screen.blit(hi_surf, (16, 46))
 
+        # tombol pause kecil di kanan atas (bisa diklik selain tombol P)
+        self.draw_icon_button(self.pause_rect)
+
         lvl_surf = self.font_small.render(f'LEVEL {self.level}', True, NEON_MAGENTA)
-        self.screen.blit(lvl_surf, (SCREEN_WIDTH - lvl_surf.get_width() - 16, 16))
+        self.screen.blit(lvl_surf, (self.pause_rect.left - lvl_surf.get_width() - 12, 16))
 
         for i in range(self.player.lives):
-            x = SCREEN_WIDTH - 24 - i * 24
+            x = self.pause_rect.left - 12 - i * 24
             y = 52
             pygame.draw.polygon(self.screen, NEON_GREEN, [
                 (x, y - 8), (x - 8, y + 6), (x + 8, y + 6),
@@ -1033,48 +1084,74 @@ class Game:
             self.screen.blit(muted, (cx - muted.get_width() // 2, SCREEN_HEIGHT - 26))
 
     def draw_button(self, rect, label, color):
-        pygame.draw.rect(self.screen, DARK_BLUE, rect, border_radius=8)
-        pygame.draw.rect(self.screen, color, rect, 2, border_radius=8)
-        text = self.font_mid.render(label, True, color)
+        '''Gambar tombol dengan efek hover saat kursor di atasnya.'''
+        hovered = rect.collidepoint(pygame.mouse.get_pos())
+        fill = (30, 30, 70) if hovered else DARK_BLUE
+        border = WHITE if hovered else color
+        pygame.draw.rect(self.screen, fill, rect, border_radius=8)
+        pygame.draw.rect(self.screen, border, rect, 2, border_radius=8)
+        text = self.font_mid.render(label, True, border)
         self.screen.blit(text, (rect.centerx - text.get_width() // 2,
                                 rect.centery - text.get_height() // 2))
 
+    def draw_icon_button(self, rect):
+        '''Tombol kecil berisi ikon pause (dua batang).'''
+        hovered = rect.collidepoint(pygame.mouse.get_pos())
+        border = WHITE if hovered else NEON_CYAN
+        pygame.draw.rect(self.screen, DARK_BLUE, rect, border_radius=6)
+        pygame.draw.rect(self.screen, border, rect, 2, border_radius=6)
+        bar_w, bar_h = 5, 14
+        for dx in (-8, 3):
+            pygame.draw.rect(self.screen, border,
+                             pygame.Rect(rect.centerx + dx,
+                                         rect.centery - bar_h // 2,
+                                         bar_w, bar_h))
+
     def draw_pause_overlay(self):
-        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 150))
-        self.screen.blit(overlay, (0, 0))
-
-        text = self.font_big.render('PAUSED', True, NEON_CYAN)
-        self.screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2,
-                                SCREEN_HEIGHT // 2 - 60))
-
-        hint = self.font_small.render('Tekan P untuk lanjut', True, WHITE)
-        self.screen.blit(hint, (SCREEN_WIDTH // 2 - hint.get_width() // 2,
-                                SCREEN_HEIGHT // 2 + 10))
-
-    def draw_game_over(self):
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 170))
         self.screen.blit(overlay, (0, 0))
 
         cx = SCREEN_WIDTH // 2
 
+        title = self.font_big.render('PAUSED', True, NEON_CYAN)
+        self.screen.blit(title, (cx - title.get_width() // 2, 120))
+
+        resume, menu, quit_btn = self.pause_buttons()
+        self.draw_button(resume, 'LANJUT', NEON_GREEN)
+        self.draw_button(menu, 'MENU', NEON_CYAN)
+        self.draw_button(quit_btn, 'KELUAR', NEON_RED)
+
+        hint = self.font_small.render('P = lanjut  -  Esc = menu', True, GREY)
+        self.screen.blit(hint, (cx - hint.get_width() // 2, 450))
+
+    def draw_game_over(self):
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 180))
+        self.screen.blit(overlay, (0, 0))
+
+        cx = SCREEN_WIDTH // 2
+
         title = self.font_big.render('GAME OVER', True, NEON_RED)
-        self.screen.blit(title, (cx - title.get_width() // 2, 180))
+        self.screen.blit(title, (cx - title.get_width() // 2, 90))
 
         score = self.font_mid.render(f'Skor: {self.score}', True, WHITE)
-        self.screen.blit(score, (cx - score.get_width() // 2, 270))
+        self.screen.blit(score, (cx - score.get_width() // 2, 170))
 
         hi = self.font_mid.render(f'High Score: {self.highscore}', True, NEON_YELLOW)
-        self.screen.blit(hi, (cx - hi.get_width() // 2, 315))
+        self.screen.blit(hi, (cx - hi.get_width() // 2, 212))
 
         if self.score >= self.highscore and self.score > 0:
             new_hi = self.font_small.render('NEW HIGH SCORE!', True, NEON_GREEN)
-            self.screen.blit(new_hi, (cx - new_hi.get_width() // 2, 360))
+            self.screen.blit(new_hi, (cx - new_hi.get_width() // 2, 258))
 
-        hint = self.font_small.render('Tekan R untuk restart  -  Esc untuk menu',
-                                      True, GREY)
-        self.screen.blit(hint, (cx - hint.get_width() // 2, 420))
+        again, menu, quit_btn = self.gameover_buttons()
+        self.draw_button(again, 'MAIN LAGI', NEON_GREEN)
+        self.draw_button(menu, 'MENU', NEON_CYAN)
+        self.draw_button(quit_btn, 'KELUAR', NEON_RED)
+
+        hint = self.font_small.render('R = main lagi  -  Esc = menu', True, GREY)
+        self.screen.blit(hint, (cx - hint.get_width() // 2, 566))
 
 
 if __name__ == '__main__':

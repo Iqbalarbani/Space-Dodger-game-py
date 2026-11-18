@@ -77,10 +77,10 @@ Kendalikan pesawat di bagian bawah layar. Tembak asteroid yang berjatuhan untuk 
 | Mulai game (dari menu) | Enter / klik START |
 | Gerak kiri / kanan | Panah kiri / kanan, atau A / D |
 | Tembak | Spasi (tahan untuk tembak terus) |
-| Pause / lanjut | P |
+| Pause / lanjut | P, atau klik ikon pause di kanan atas |
 | Matikan / hidupkan suara | M |
-| Restart saat Game Over | R |
-| Kembali ke menu / keluar | Esc |
+| Restart saat Game Over | R, atau klik MAIN LAGI |
+| Kembali ke menu / keluar | Esc, atau klik MENU / KELUAR |
 
 ### Aturan & Skor
 - **Menembak asteroid** memberi **+10 poin** per asteroid.
@@ -95,6 +95,12 @@ Kendalikan pesawat di bagian bawah layar. Tembak asteroid yang berjatuhan untuk 
   - Punya **health bar** di atas layar; tembak terus sampai habis.
   - Saat kalah: bonus skor besar + menjatuhkan **3 power-up**.
 - **Game Over** saat nyawa habis. Skor tertinggi otomatis disimpan ke `highscore.txt` dan tampil di menu.
+
+### Tombol di Layar (bisa diklik)
+- **Saat bermain:** ikon **pause** kecil di pojok kanan atas untuk menjeda.
+- **Layar Pause:** tombol **LANJUT**, **MENU**, dan **KELUAR**.
+- **Layar Game Over:** tombol **MAIN LAGI**, **MENU**, dan **KELUAR**.
+- Semua tombol memberi efek hover saat kursor di atasnya.
 
 ### Tips
 - Terus bergerak kiri-kanan agar tidak mudah tertabrak.
